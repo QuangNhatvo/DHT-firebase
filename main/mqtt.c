@@ -1,6 +1,7 @@
     #include "mqtt.h"
     #include "DHT.h"
     #include "led_lib.h"
+    #include "servo_lib.h"
 
 static const char *TAG = "MQTT";
 static esp_mqtt_client_handle_t global_client;
@@ -74,15 +75,33 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         int signal_led = getState();
         ESP_LOGI(TAG, "Status: %d", signal_led);
 
-        char *json_state = convert_model_signaldiv_to_json(signal_led);
-        ESP_LOGI(TAG, "%s", json_state);
-        if (json_state != NULL) {
-            msg_id = esp_mqtt_client_publish(client, "led_status/status", json_state, 0, 0, 0);
+        char *json_StateLed = convert_model_signaldiv_to_json(signal_led);
+        ESP_LOGI(TAG, "%s", json_StateLed);
+        if (json_StateLed != NULL) {
+            msg_id = esp_mqtt_client_publish(client, "led_status/status", json_StateLed, 0, 0, 0);
             ESP_LOGI(TAG, "Sent publish successful, msg_id=%d", msg_id);
-            free(json_state);
+            free(json_StateLed);
         } else {
             ESP_LOGE(TAG, "Failed to create JSON string");
         }
+        }
+
+        //SERVO DATA:
+         if (getStateSer() == 1 || getStateSer() == 0) {
+        ESP_LOGI(TAG, "=== SIGNAL Servo ===");
+        int signal_servo = getStateSer();
+        ESP_LOGI(TAG, "Status: %d", signal_servo);
+
+        char *json_StateServo = convert_model_signaldiv_to_json(signal_servo);
+        ESP_LOGI(TAG, "%s", json_StateServo);
+        if (json_StateServo != NULL) {
+            msg_id = esp_mqtt_client_publish(client, "servo_status/status", json_StateServo, 0, 0, 0);
+            ESP_LOGI(TAG, "Sent publish successful, msg_id=%d", msg_id);
+            free(json_StateServo);
+        } else {
+            ESP_LOGE(TAG, "Failed to create JSON string");
+        }
+
     }
 
         break;
@@ -162,11 +181,11 @@ char *convert_model_signaldiv_to_json(int signal)
         return NULL;
     }
     // modify the JSON data
-    char ledstate_str[10];
-    if(signal == 1) snprintf(ledstate_str, sizeof(ledstate_str), "Bật");
-    else snprintf(ledstate_str, sizeof(ledstate_str), "Tắt");
+    char state_str[10];
+    if(signal == 1) snprintf(state_str, sizeof(state_str), "Bật");
+    else snprintf(state_str, sizeof(state_str), "Tắt");
 
-    cJSON_AddStringToObject(json, "state", ledstate_str);
+    cJSON_AddStringToObject(json, "state", state_str);
     // convert the cJSON object to a JSON string
     char *json_state = cJSON_PrintUnformatted(json);
     // free the JSON object (not the string)

@@ -12,6 +12,7 @@
 #include "wifi.h"    // Thêm thư viện WiFi
 #include "mqtt.h"    // Thêm thư viện MQTT
 #include "led_lib.h"
+#include "servo_lib.h"
 
 static const char *TAG = "DHT";
 
@@ -48,7 +49,7 @@ void DHT_task(void *pvParameter)
         free(json_data);*/
 
         // -- wait at least 10 sec before reading again ------------
-        vTaskDelay(10000 / portTICK_PERIOD_MS);
+        vTaskDelay(30000 / portTICK_PERIOD_MS);
     }
 }
 
@@ -69,7 +70,25 @@ void LED_task(void *pvParameter)
         led_st = !led_st;
 
         // Chờ 5 giây
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(30000));
+    }
+}
+
+//Servo
+void Servo_task(void *pvParameter)
+{
+    setServogpio(GPIO_NUM_23);
+    // Biến trạng thái của LED
+    int servo_st = 0;
+    while (1)
+    {
+        // Bật hoặc tắt LED tùy theo trạng thái hiện tại
+        servo_set_state(GPIO_NUM_23,servo_st);
+        getStateSer();
+        // Chuyển đổi trạng thái để xen kẽ giữa bật và tắt
+        servo_st = !servo_st;
+        // Chờ 5 giây
+        vTaskDelay(pdMS_TO_TICKS(30000));
     }
 }
 
@@ -96,7 +115,10 @@ void app_main()
     xTaskCreate(&DHT_task, "DHT_task", 2048, NULL, 5, NULL);
 
     //Create LED task:
-    xTaskCreate(&LED_task, "LED_task", 2048, NULL, 5, NULL);
+    xTaskCreate(&LED_task, "LED_task", 2048, NULL, 4, NULL);
+
+    //Create Servo task:
+    xTaskCreate(&Servo_task, "LED_task", 2048, NULL, 3, NULL);
 
     // Initialize MQTT
     ESP_LOGI(TAG, "Initializing MQTT...");

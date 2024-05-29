@@ -163,12 +163,12 @@ char *convert_model_signaldiv_to_json(int signal)
     }
     // modify the JSON data
     char ledstate_str[10];
-    snprintf(ledstate_str, sizeof(ledstate_str), "%d", signal);
+    if(signal == 1) snprintf(ledstate_str, sizeof(ledstate_str), "Bật");
+    else snprintf(ledstate_str, sizeof(ledstate_str), "Tắt");
 
-    cJSON_AddStringToObject(json, "led_signal", ledstate_str);
+    cJSON_AddStringToObject(json, "state", ledstate_str);
     // convert the cJSON object to a JSON string
     char *json_state = cJSON_PrintUnformatted(json);
-
     // free the JSON object (not the string)
     cJSON_Delete(json);
 

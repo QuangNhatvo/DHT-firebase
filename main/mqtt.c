@@ -1,5 +1,6 @@
     #include "mqtt.h"
     #include "DHT.h"
+    #include "led_lib.h"
 
 static const char *TAG = "MQTT";
 static esp_mqtt_client_handle_t global_client;
@@ -47,7 +48,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
     case MQTT_EVENT_SUBSCRIBED:
         ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-    
+        //DHT data:
         int ret = readDHT();
         if (ret == DHT_OK) {
             float temperature = getTemperature();
@@ -66,6 +67,24 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         } else {
             errorHandler(ret);
         }
+
+        //LED DATA:
+        if (getState() == 1 || getState() == 0) {
+        ESP_LOGI(TAG, "=== SIGNAL LED ===");
+        int signal_led = getState();
+        ESP_LOGI(TAG, "Status: %d", signal_led);
+
+        char *json_state = convert_model_signaldiv_to_json(signal_led);
+        ESP_LOGI(TAG, "%s", json_state);
+        if (json_state != NULL) {
+            msg_id = esp_mqtt_client_publish(client, "led_status/status", json_state, 0, 0, 0);
+            ESP_LOGI(TAG, "Sent publish successful, msg_id=%d", msg_id);
+            free(json_state);
+        } else {
+            ESP_LOGE(TAG, "Failed to create JSON string");
+        }
+    }
+
         break;
     case MQTT_EVENT_UNSUBSCRIBED:
         ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
@@ -104,6 +123,7 @@ esp_mqtt_client_handle_t get_mqtt_client_handle(void)
     return global_client;
 }
 
+//DHT convert:
 char *convert_model_sensor_to_json(float temperature, float humidity)
 {
     // create a new cJSON object
@@ -130,6 +150,32 @@ char *convert_model_sensor_to_json(float temperature, float humidity)
 
     return json_str;
 }
+
+//LED signal convert:
+char *convert_model_signaldiv_to_json(int signal)
+{
+    // create a new cJSON object
+    cJSON *json = cJSON_CreateObject();
+    if (json == NULL)
+    {
+        printf("Error: Failed to create cJSON object");
+        return NULL;
+    }
+    // modify the JSON data
+    char ledstate_str[10];
+    snprintf(ledstate_str, sizeof(ledstate_str), "%d", signal);
+
+    cJSON_AddStringToObject(json, "led_signal", ledstate_str);
+    // convert the cJSON object to a JSON string
+    char *json_state = cJSON_PrintUnformatted(json);
+
+    // free the JSON object (not the string)
+    cJSON_Delete(json);
+
+    return json_state;
+}
+//#################################
+
 
 /*void mqtt_data_publish_update()
 {

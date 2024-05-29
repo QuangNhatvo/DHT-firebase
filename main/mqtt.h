@@ -43,6 +43,7 @@ typedef void (*mqtt_data_pt_t)(char *data, uint16_t length);
 void mqtt_data_publish_update();
 void mqtt_data_pt_set_callback(mqtt_data_pt_t mqtt_func_ptr);
 char *convert_model_sensor_to_json(float temperature, float humidity);
+char *convert_model_signaldiv_to_json(int signal);
 
 void mqtt_app_start(void);
 

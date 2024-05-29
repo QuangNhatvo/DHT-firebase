@@ -11,9 +11,11 @@
 #include "DHT.h"
 #include "wifi.h"    // Thêm thư viện WiFi
 #include "mqtt.h"    // Thêm thư viện MQTT
+#include "led_lib.h"
 
 static const char *TAG = "DHT";
 
+//DHT:
 void DHT_task(void *pvParameter)
 {
     setDHTgpio(GPIO_NUM_27);
@@ -50,6 +52,27 @@ void DHT_task(void *pvParameter)
     }
 }
 
+//LED:
+void LED_task(void *pvParameter)
+{
+    setLEDgpio(GPIO_NUM_21);
+
+    // Biến trạng thái của LED
+    int led_st = 0;
+
+    while (1)
+    {
+        // Bật hoặc tắt LED tùy theo trạng thái hiện tại
+        led_set(led_st);
+        getState();
+        // Chuyển đổi trạng thái để xen kẽ giữa bật và tắt
+        led_st = !led_st;
+
+        // Chờ 5 giây
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+}
+
 void app_main()
 {
     // Initialize NVS
@@ -71,6 +94,10 @@ void app_main()
 
     // Create the DHT task
     xTaskCreate(&DHT_task, "DHT_task", 2048, NULL, 5, NULL);
+
+    //Create LED task:
+    xTaskCreate(&LED_task, "LED_task", 2048, NULL, 5, NULL);
+
     // Initialize MQTT
     ESP_LOGI(TAG, "Initializing MQTT...");
     mqtt_app_start();
